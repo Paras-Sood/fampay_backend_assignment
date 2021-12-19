@@ -20,23 +20,69 @@
             font-size: 16px;
             border-radius: 4px;
             border: 1px solid gray;
-            width: 500px;
+            width: 80%;
             outline: none;
             padding: 4px;
             margin: 2px 8px;
         }
+        header{
+            background-color: black;
+            color: white;
+            padding: 10px;
+            text-align: center;
+        }
+        li{
+            cursor: pointer;
+        }
+        #filters_div{
+            margin: 10px;
+            padding: 8px;
+            /* align-items: center;
+            text-align: center; */
+        }
+        #filters{
+            display: flex;
+            flex-direction: column;
+            margin: auto;
+        }
+        input,select{
+            margin: 10px;
+            width: 50%;
+            font-size: 16px;
+            border: 1px solid gray;
+            border-radius: 4px;
+        }
     </style>
 </head>
 <body>
-    <h1>Hello World!</h1>
-    <form>
-        <input type="text" id="query">
-        <input type="submit" value="Search" class="btn btn-outline-primary">
-    </form>
+    <header>
+        <h1>Fampay Backend Assignment</h1>
+    </header>
+    <div id="filters_div">
+        <form id="filters">
+            <div>
+                <label for="order">Order by - </label>
+                <select name="order" id="order">
+                    <option value="publishing_datetime">Publishing Datetime</option>
+                    <option value="title">Title</option>
+                </select>
+            </div>
+            <div>
+                <label for="maxResults">Max Results</label>
+                <input type="number" placeholder="Max Results" id="maxResults" value="10" max="50" min="1">
+            </div>
+            <div>
+                <label for="publishedAfter">Published After - </label>
+                <input type="datetime-local" id="publishedAfter">
+            </div>
+            <div>
+                <input type="submit" value="Apply Filters" class="btn btn-outline-primary" style="width: auto;">
+            </div>
+        </form>
+    </div>
     <div id="videos_div"></div>
     <nav aria-label="Page navigation example" id="page-change">
         <ul class="pagination justify-content-center" id="paginationul">
-            <li>1</li>
         </ul>
     </nav>
 </body>

@@ -1,19 +1,37 @@
-var page=1;
+var start=1,publishedAfter="",maxResults=10,order="publishing_datetime";
 document.addEventListener('DOMContentLoaded',()=>{
     console.log("Here")
-    document.querySelector('form').onsubmit = function(){
-        fetch(`/get_data?q=${document.querySelector('#query').value}`)
-        .then(response=>response.json())
-        .then(response=>{
-            console.log(response)
-            response.forEach(video => {
-                add_video(video,"videos_div")
-            });
-            // pagination(response.num_pages,((start-1)/10)+1)
-        })
+    load_videos()
+    document.querySelector('#filters').onsubmit = function(){
+        publishedAfter=document.querySelector('#publishedAfter').value
+        maxResults=document.querySelector('#maxResults').value
+        order=document.querySelector('#order').value
+        load_videos()
         return false
     }
 })
+function load_videos(){
+    let url;
+    if(publishedAfter===""){
+        url=`/get_data?start=${start}&maxResults=${maxResults}&order=${order}`
+    }else{
+        url=`/get_data?start=${start}&maxResults=${maxResults}&order=${order}&publishedAfter=${publishedAfter}`
+    }
+    fetch(url)
+        .then(response=>response.json())
+        .then(response=>{
+            document.querySelector('#videos_div').innerHTML="";
+            console.log(response)
+            if(response.error){
+                document.querySelector('#videos_div').innerHTML=`<h2>${response.error}</h2>`;
+            }else{
+                response.videos.forEach(video => {
+                    add_video(video,"videos_div")
+                });
+                pagination(response.num_pages,((start-1)/10)+1)
+            }
+        })
+}
 function add_video(video,location_id){
     let video_div=document.createElement('div')
     video_div.className="list-item"
@@ -52,7 +70,7 @@ function pagination(num_pages,current_page){
     a.innerHTML='Previous'
     a.addEventListener('click',()=>{
         start-=10;
-        load_following_posts();
+        load_videos();
     });
     previous.append(a);
     ul.append(previous);
@@ -70,7 +88,7 @@ function pagination(num_pages,current_page){
         span.innerHTML=i
         span.addEventListener('click',function(){
             start=(parseInt(this.innerHTML)*10-9);
-            load_following_posts();
+            load_videos();
         })
         page.append(span);
         ul.append(page);
@@ -86,7 +104,7 @@ function pagination(num_pages,current_page){
     an.innerHTML='Next'
     an.addEventListener('click',()=>{
         start+=10;
-        load_following_posts();
+        load_videos();
     });
     next.append(an);
     ul.append(next);
