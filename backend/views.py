@@ -7,25 +7,38 @@ from googleapiclient.discovery import build
 from django.urls import reverse
 import math,threading,asyncio
 
-
-DEVELOPER_KEY = '<Your API Key here>'
+API_KEY = '<Your API Key here>'
 YOUTUBE_API_SERVICE_NAME = 'youtube'
 YOUTUBE_API_VERSION = 'v3'
 
-def youtube_search():
-    youtube = build(YOUTUBE_API_SERVICE_NAME, YOUTUBE_API_VERSION,developerKey=DEVELOPER_KEY)
+class ThreadJob(threading.Thread):
+    def __init__(self,callback,event,interval):
+        self.callback = callback
+        self.event = event
+        self.interval = interval
+        super(ThreadJob,self).__init__()
+
+    def run(self):
+        while not self.event.wait(self.interval):
+            self.callback()
+
+
+def youtube_search(maxResults=50):
     try:
+        youtube = build(YOUTUBE_API_SERVICE_NAME, YOUTUBE_API_VERSION,developerKey=API_KEY)
         search_response = youtube.search().list(
             q="football",
             part='id,snippet',
-            maxResults=50, # getting the most recent 50 videos and saving them in the database
-            type='video'
+            maxResults=maxResults, # getting the most recent 50 videos for the first time and saving them in the database
+            type='video',
+            publishedAfter=Video.objects.order_by("-publishing_datetime").first().publishing_datetime,
         ).execute()
     except:
-        return 403
-    print(search_response)
+        error_message="Quota Exhausted on provided API keys."
+        print(error_message)
+        return
     for item in search_response['items']:
-        if len(Video.objects.filter(video_id=(item['id']['videoId'])))==1:
+        if len(Video.objects.filter(video_id=(item['id']['videoId'])))==1: # if this video is already present in the databse then no need to add it again
             continue
         if item['snippet']['description'][-3:]=="...":
             response=youtube.videos().list(
@@ -40,9 +53,11 @@ def youtube_search():
             thumbnail_url=Thumbnail_urls(link=thumbnail['url'],video=video)
             thumbnail_url.save()
             video.thumbnails.add(thumbnail_url)
-    return 200
 
 def index(request):
+    event = threading.Event()
+    a = ThreadJob(youtube_search,event,10)
+    a.start()
     return render(request,"backend/index.html")
 
 def get_data(request):
@@ -58,9 +73,6 @@ def get_data(request):
         maxResults=request.GET.get('maxResults')
     if 'publishedAfter' in request.GET:
         publishedAfter=parse_datetime(request.GET.get('publishedAfter'))
-    code=youtube_search()
-    if code==403:
-        return JsonResponse({"error":"Quota Exhausted for provided API key."})
     if publishedAfter is not None:
         videos=Video.objects.filter(publishing_datetime__gte=publishedAfter).order_by(f"-{order}").all()
     else:
