@@ -1,5 +1,5 @@
 # fampay_backend_assignment
-- Made a server that calls youtube API for fetching the latest videos for query="football" and stores the data of vid (fields - Video title, description, publishing datetime, thumbnails URLs) in a database. 
+- Made a server that calls youtube API(async after every 10s) for fetching the latest videos for query="football" and stores the data of vid (fields - Video title, description, publishing datetime, thumbnails URLs) in a database. 
 - Created a GET API which returns the stored video data in a paginated response sorted in descending order of published datetime.
 - Made a dashboard to see the video data along with filter and sorting support.
 
