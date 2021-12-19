@@ -1,6 +1,5 @@
-from django.db.models import query
 from django.shortcuts import render
-from backend.models import Query, Query_Serializer, Thumbnail_urls, Video, Video_Serializer
+from backend.models import  Thumbnail_urls, Video, Video_Serializer
 from django.http.response import HttpResponseRedirect, JsonResponse
 from django.utils.dateparse import parse_datetime
 from django.core.paginator import Paginator
