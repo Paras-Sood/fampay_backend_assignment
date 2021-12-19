@@ -32,6 +32,7 @@ All the requirements have been specified in ```requirements.txt``` file
 - Install reuirements by running ```pip install -r requirements.txt```
 - Run ```python manage.py makemigrations``` to make migrations
 - Run ```python manage.py migrate``` to apply migrations
+- Enter API Key in view.py
 - Run ```python manage.py runserver``` to run the server
 - API is available at ```http://127.0.0.1:8000/get_data```
 - Dashboard can be accessed at ```http://127.0.0.1:8000```
