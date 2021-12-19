@@ -8,7 +8,7 @@ from django.urls import reverse
 import math,threading,asyncio
 
 
-DEVELOPER_KEY = 'AIzaSyCm86IhxgixQeIucWY10SDf85eA4NCbw8M'
+DEVELOPER_KEY = '<Your API Key here>'
 YOUTUBE_API_SERVICE_NAME = 'youtube'
 YOUTUBE_API_VERSION = 'v3'
 
@@ -46,22 +46,18 @@ def index(request):
     return render(request,"backend/index.html")
 
 def get_data(request):
+    start=1
+    order="publishing_datetime"
+    maxResults=10
+    publishedAfter=None
     if 'start' in request.GET:
         start=request.GET.get('start')
-    else:
-        start=1
     if 'order' in request.GET:
         order=request.GET.get('order')
-    else:
-        order="publishing_datetime"
     if 'maxResults' in request.GET:
         maxResults=request.GET.get('maxResults')
-    else:
-        maxResults=10
     if 'publishedAfter' in request.GET:
         publishedAfter=parse_datetime(request.GET.get('publishedAfter'))
-    else:
-        publishedAfter=None
     code=youtube_search()
     if code==403:
         return JsonResponse({"error":"Quota Exhausted for provided API key."})
