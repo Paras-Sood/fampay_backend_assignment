@@ -61,7 +61,7 @@ def youtube_search(maxResults=50):
 def index(request):
     youtube_search()
     event = threading.Event()
-    a = ThreadJob(youtube_search,event,100)
+    a = ThreadJob(youtube_search,event,10)
     a.start()
     return render(request,"backend/index.html")
 
