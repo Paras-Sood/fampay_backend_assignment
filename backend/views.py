@@ -1,13 +1,12 @@
 from django.shortcuts import render
 from backend.models import  Thumbnail_urls, Video, Video_Serializer
-from django.http.response import HttpResponseRedirect, JsonResponse
+from django.http.response import JsonResponse
 from django.utils.dateparse import parse_datetime
 from django.core.paginator import Paginator
 from googleapiclient.discovery import build
-from django.urls import reverse
-import math,threading,asyncio
+import math,threading
 
-API_KEY = '<Your API Key here>'
+API_KEY = '' # Your API key here
 YOUTUBE_API_SERVICE_NAME = 'youtube'
 YOUTUBE_API_VERSION = 'v3'
 
@@ -26,12 +25,17 @@ class ThreadJob(threading.Thread):
 def youtube_search(maxResults=50):
     try:
         youtube = build(YOUTUBE_API_SERVICE_NAME, YOUTUBE_API_VERSION,developerKey=API_KEY)
+        latest_video=Video.objects.order_by("-publishing_datetime").first()
+        if latest_video is not None:
+            last_publishing_datetime=latest_video.publishing_datetime.isoformat()
+        else:
+            last_publishing_datetime=None
         search_response = youtube.search().list(
             q="football",
             part='id,snippet',
             maxResults=maxResults, # getting the most recent 50 videos for the first time and saving them in the database
             type='video',
-            publishedAfter=Video.objects.order_by("-publishing_datetime").first().publishing_datetime,
+            publishedAfter=last_publishing_datetime, # Getting new videos which have been published after the latest stored video in the database
         ).execute()
     except:
         error_message="Quota Exhausted on provided API keys."
@@ -44,7 +48,7 @@ def youtube_search(maxResults=50):
             response=youtube.videos().list(
                 id=item['id']['videoId'],
                 part='snippet',
-            ).execute()
+            ).execute() # Getting complete description
             video=Video(video_id=response['items'][0]['id'],title=response['items'][0]['snippet']['title'],description=response['items'][0]['snippet']['description'],publishing_datetime=parse_datetime(response['items'][0]['snippet']['publishedAt']))
         else:
             video=Video(video_id=item['id']['videoId'],title=item['snippet']['title'],description=item['snippet']['description'],publishing_datetime=parse_datetime(item['snippet']['publishedAt']))
@@ -55,12 +59,15 @@ def youtube_search(maxResults=50):
             video.thumbnails.add(thumbnail_url)
 
 def index(request):
+    youtube_search()
     event = threading.Event()
-    a = ThreadJob(youtube_search,event,10)
+    a = ThreadJob(youtube_search,event,100)
     a.start()
     return render(request,"backend/index.html")
 
 def get_data(request):
+    if API_KEY=="":
+        return JsonResponse({"error":"Provide an API Key"})
     start=1
     order="publishing_datetime"
     maxResults=10
@@ -74,13 +81,13 @@ def get_data(request):
     if 'publishedAfter' in request.GET:
         publishedAfter=parse_datetime(request.GET.get('publishedAfter'))
     if publishedAfter is not None:
-        videos=Video.objects.filter(publishing_datetime__gte=publishedAfter).order_by(f"-{order}").all()
+        videos=Video.objects.filter(publishing_datetime__gte=publishedAfter).order_by(f"-{order}")
     else:
-        videos=Video.objects.all().order_by(f"-{order}").all()
+        videos=Video.objects.all().order_by(f"-{order}")
     paginator=Paginator(videos,maxResults)
     page_no=math.ceil(int(start)/10)
     page_obj=paginator.get_page(page_no)
-    videos=[video for video in page_obj]
+    videos=page_obj.object_list
     serializer=Video_Serializer(videos,many = True)
     return JsonResponse({"videos":serializer.data,"num_pages":paginator.num_pages})
 
