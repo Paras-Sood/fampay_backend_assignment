@@ -17,7 +17,7 @@
 2. __views .py Functions and their URLs__:
     1. _index_ (url - '/') - This is the default route. Renders the landing page i.e. index.html.
     2. _get\_data_ (url = '/get_data?<parameters>') - GET API for fetching the video data stored in the database. Following GET parameters can be provided -
-        1. start - the starting index of receiving videos. _default = 1_
+        1. page - Page no of receiving videos. _default = 1_
         2. order - Order in which the videos should be fetched. Eg - Date,title. _default = date_
         3. maxResults - Maximum number of results expected _default = 10_
         4. publishedAfter - Only those videos will be returned which had been published after this datetime. _default = Top 50 responses would be returned_
@@ -32,7 +32,7 @@ All the requirements have been specified in ```requirements.txt``` file
 - Install reuirements by running ```pip install -r requirements.txt```
 - Run ```python manage.py makemigrations``` to make migrations
 - Run ```python manage.py migrate``` to apply migrations
-- Enter API Key in view.py
+- Enter API Keys in views.py
 - Run ```python manage.py runserver``` to run the server
 - API is available at ```http://127.0.0.1:8000/get_data```
 - Dashboard can be accessed at ```http://127.0.0.1:8000```

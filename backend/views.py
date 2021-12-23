@@ -6,7 +6,7 @@ from django.core.paginator import Paginator
 from googleapiclient.discovery import build
 import math,threading
 
-API_KEY = '' # Your API key here
+API_KEYS_LIST = [] # Your API keys here (Provide as string Eg - ['a','b','c'])
 YOUTUBE_API_SERVICE_NAME = 'youtube'
 YOUTUBE_API_VERSION = 'v3'
 
@@ -21,13 +21,40 @@ class ThreadJob(threading.Thread):
         while not self.event.wait(self.interval):
             self.callback()
 
+class API_KEYS:
+    def __init__(self,keys):
+        self.keys=keys
+        self.index=0
+
+    def get_key(self):
+        if self.index==len(self.keys):
+            return ""
+        return self.keys[self.index]
+
+    def quota_exhausted(self):
+        if self.index<len(self.keys):
+            self.index+=1 # updating the index
+
+    def last_used_key(self):
+        if self.index==0:
+            return ""
+        return self.keys[self.index-1]
+
+api_key_object=API_KEYS(API_KEYS_LIST)
 
 def youtube_search(maxResults=50):
+    if len(API_KEYS_LIST)==0:
+        print("Provide API KEYS")
+        return
     try:
-        youtube = build(YOUTUBE_API_SERVICE_NAME, YOUTUBE_API_VERSION,developerKey=API_KEY)
-        latest_video=Video.objects.order_by("-publishing_datetime").first()
+        key=api_key_object.get_key()
+        if key=="":
+            print("Reached end of list of API KEYS.")
+            raise Exception
+        youtube = build(YOUTUBE_API_SERVICE_NAME, YOUTUBE_API_VERSION,developerKey=key)
+        latest_video=Video.objects.order_by("-publishing_datetime").first() # Getting lastest stored video (latest video = Video with have been published most recently out of all the stored videos)
         if latest_video is not None:
-            last_publishing_datetime=latest_video.publishing_datetime.isoformat()
+            last_publishing_datetime=latest_video.publishing_datetime.isoformat() # Getting datetime of lastest stored video
         else:
             last_publishing_datetime=None
         search_response = youtube.search().list(
@@ -38,7 +65,8 @@ def youtube_search(maxResults=50):
             publishedAfter=last_publishing_datetime, # Getting new videos which have been published after the latest stored video in the database
         ).execute()
     except:
-        error_message="Quota Exhausted on provided API keys."
+        api_key_object.quota_exhausted() # If quota exhausted then update the index
+        error_message=f"Quota Exhausted on API key = {api_key_object.last_used_key()}"
         print(error_message)
         return
     for item in search_response['items']:
@@ -61,19 +89,17 @@ def youtube_search(maxResults=50):
 def index(request):
     youtube_search()
     event = threading.Event()
-    a = ThreadJob(youtube_search,event,10)
+    a = ThreadJob(youtube_search,event,10) # calling youtube_search function async after every 10 sec
     a.start()
     return render(request,"backend/index.html")
 
 def get_data(request):
-    if API_KEY=="":
-        return JsonResponse({"error":"Provide an API Key"})
-    start=1
+    page=1
     order="publishing_datetime"
     maxResults=10
     publishedAfter=None
-    if 'start' in request.GET:
-        start=request.GET.get('start')
+    if 'page' in request.GET:
+        page=request.GET.get('page')
     if 'order' in request.GET:
         order=request.GET.get('order')
     if 'maxResults' in request.GET:
@@ -85,8 +111,7 @@ def get_data(request):
     else:
         videos=Video.objects.all().order_by(f"-{order}")
     paginator=Paginator(videos,maxResults)
-    page_no=math.ceil(int(start)/10)
-    page_obj=paginator.get_page(page_no)
+    page_obj=paginator.get_page(page)
     videos=page_obj.object_list
     serializer=Video_Serializer(videos,many = True)
     return JsonResponse({"videos":serializer.data,"num_pages":paginator.num_pages})

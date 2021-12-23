@@ -1,4 +1,4 @@
-var start=1,publishedAfter="",maxResults=10,order="publishing_datetime";
+var page_no=1,publishedAfter="",maxResults=10,order="publishing_datetime";
 document.addEventListener('DOMContentLoaded',()=>{
     console.log("Here")
     load_videos()
@@ -6,6 +6,7 @@ document.addEventListener('DOMContentLoaded',()=>{
         publishedAfter=document.querySelector('#publishedAfter').value
         maxResults=document.querySelector('#maxResults').value
         order=document.querySelector('#order').value
+        page_no=1;
         load_videos()
         return false
     }
@@ -13,9 +14,9 @@ document.addEventListener('DOMContentLoaded',()=>{
 function load_videos(){
     let url;
     if(publishedAfter===""){
-        url=`/get_data?start=${start}&maxResults=${maxResults}&order=${order}`
+        url=`/get_data?page=${page_no}&maxResults=${maxResults}&order=${order}`
     }else{
-        url=`/get_data?start=${start}&maxResults=${maxResults}&order=${order}&publishedAfter=${publishedAfter}`
+        url=`/get_data?page=${page_no}&maxResults=${maxResults}&order=${order}&publishedAfter=${publishedAfter}`
     }
     fetch(url)
         .then(response=>response.json())
@@ -28,7 +29,7 @@ function load_videos(){
                 response.videos.forEach(video => {
                     add_video(video,"videos_div")
                 });
-                pagination(response.num_pages,((start-1)/10)+1)
+                pagination(response.num_pages,page_no)
             }
         })
 }
@@ -69,7 +70,7 @@ function pagination(num_pages,current_page){
     a.className='page-link'
     a.innerHTML='Previous'
     a.addEventListener('click',()=>{
-        start-=10;
+        page_no-=1;
         load_videos();
     });
     previous.append(a);
@@ -87,7 +88,7 @@ function pagination(num_pages,current_page){
         span.className="page-link"
         span.innerHTML=i
         span.addEventListener('click',function(){
-            start=(parseInt(this.innerHTML)*10-9);
+            page_no=parseInt(this.innerHTML);
             load_videos();
         })
         page.append(span);
@@ -103,7 +104,7 @@ function pagination(num_pages,current_page){
     an.className='page-link'
     an.innerHTML='Next'
     an.addEventListener('click',()=>{
-        start+=10;
+        page_no+=1;
         load_videos();
     });
     next.append(an);
